@@ -9,5 +9,7 @@ The client script accepts commands over the reverse shell.
 commands:
 
 hook - starts keylogging and saves data in a temprary folder.
+
 unhook - stops keylogging
+
 exfil - sends keylog data to server and deletes temporary folder used to store data.
